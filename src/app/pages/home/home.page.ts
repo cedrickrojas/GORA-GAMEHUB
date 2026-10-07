@@ -52,7 +52,7 @@ import { SearchBarComponent } from '../../components/search-bar.component';
         </strong>
       </div>
     </div>
-    <div class="mobile-home-search"><g-search (search)="homeSearch($event)" /></div>
+    <div class="mobile-home-search"><g-search (submitted)="homeSearch($event)" /></div>
     @if (error()) {
       <g-empty
         title="Can’t load the game plan"
@@ -343,7 +343,7 @@ export class HomePage {
     this.selectedSport.set(this.selectedSport() === s ? '' : s);
   }
   homeSearch(q: string) {
-    void this.router.navigate(['/tabs/discover'], { queryParams: { q } });
+    void this.router.navigate(['/search'], { queryParams: { q: q.trim() || null } });
   }
   async join(e: Game) {
     if (!this.api.requireUser()) return;

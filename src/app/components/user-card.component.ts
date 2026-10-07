@@ -1,8 +1,10 @@
-import { Component, Input, Output, EventEmitter } from '@angular/core';
-import { RouterLink } from '@angular/router';
+import { Component, Input, Output, EventEmitter, inject, signal } from '@angular/core';
+import { Router, RouterLink } from '@angular/router';
 import { Person } from '../models';
 import { AvatarComponent } from './avatar.component';
 import { IconComponent } from '../shared/icon.component';
+import { ApiService } from '../services/api.service';
+import { UiService } from '../services/ui.service';
 @Component({
   selector: 'g-user-card',
   standalone: true,
@@ -31,16 +33,75 @@ import { IconComponent } from '../shared/icon.component';
         }}<span>· {{ person.games_joined }} games</span>
       </p>
     }
+    @if (socialActions && person.id !== api.user()?.id) {
+      <div class="person-social-actions">
+        <button
+          class="button secondary small"
+          [disabled]="following()"
+          [attr.aria-pressed]="!!person.is_following"
+          (click)="follow()"
+        >
+          <g-icon [name]="person.is_following ? 'checkmark-outline' : 'person-add-outline'" />{{
+            following() ? 'Updating…' : person.is_following ? 'Following' : 'Follow'
+          }}
+        </button>
+        <button class="button secondary small" [disabled]="messaging()" (click)="message()">
+          <g-icon name="chatbubble-ellipses-outline" />{{ messaging() ? 'Opening…' : 'Message' }}
+        </button>
+      </div>
+    }
     <div class="person-actions">
-      <button class="button secondary small" (click)="invite.emit(person)">
-        <g-icon name="person-add-outline" />Invite</button
-      ><a [routerLink]="['/user', person.id]"
-        >View profile<g-icon name="arrow-forward-outline"
-      /></a>
+      @if (showInvite) {
+        <button class="button secondary small" (click)="invite.emit(person)">
+          <g-icon name="person-add-outline" />Invite
+        </button>
+      }
+      <a [routerLink]="['/user', person.id]">View profile<g-icon name="arrow-forward-outline" /></a>
     </div>
   </article>`,
 })
 export class UserCardComponent {
   @Input({ required: true }) person!: Person;
+  @Input() socialActions = false;
+  @Input() showInvite = true;
   @Output() invite = new EventEmitter<Person>();
+  api = inject(ApiService);
+  ui = inject(UiService);
+  router = inject(Router);
+  following = signal(false);
+  messaging = signal(false);
+  async follow() {
+    if (this.following() || !this.api.requireUser()) return;
+    this.following.set(true);
+    try {
+      await this.ui.run(async () => {
+        const followed = !!this.person.is_following;
+        if (followed) await this.api.delete('/people/' + this.person.id + '/follow');
+        else await this.api.post('/people/' + this.person.id + '/follow');
+        this.person = {
+          ...this.person,
+          is_following: !followed,
+          followers: this.person.followers + (followed ? -1 : 1),
+        };
+      });
+    } finally {
+      this.following.set(false);
+    }
+  }
+  async message() {
+    if (this.messaging() || !this.api.requireUser()) return;
+    this.messaging.set(true);
+    try {
+      await this.ui.run(async () => {
+        const conversation = await this.api.post<{ id: string }>('/conversations', {
+          user_id: this.person.id,
+        });
+        await this.router.navigate(['/tabs/messages'], {
+          queryParams: { conversation: conversation.id },
+        });
+      });
+    } finally {
+      this.messaging.set(false);
+    }
+  }
 }

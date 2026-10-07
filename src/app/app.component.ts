@@ -1,4 +1,4 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, computed, inject, signal } from '@angular/core';
 import { Router, RouterLink, RouterLinkActive, RouterOutlet, NavigationEnd } from '@angular/router';
 import { IonApp } from '@ionic/angular/standalone';
 import { filter } from 'rxjs';
@@ -73,7 +73,11 @@ import { CreateEventButtonComponent } from './components/create-event-button.com
           <div class="mobile-brand">
             <a routerLink="/tabs/home" class="brand">GORA<span class="brand-dot">.</span></a>
           </div>
-          <g-search (search)="search($event)" />
+          <g-search
+            [value]="searchQuery()"
+            (submitted)="search($event)"
+            (queryChange)="clearGlobalSearch($event)"
+          />
           <div class="topbar-actions">
             <button class="location-picker" (click)="location()">
               <g-icon name="location-outline" />{{ currentLocation()
@@ -109,10 +113,19 @@ export class AppComponent {
   ui = inject(UiService);
   router = inject(Router);
   url = signal(this.router.url);
-  standalonePage = signal(true);
+  standalonePage = computed(() => {
+    const path = this.url().split(/[?#]/)[0];
+    return (
+      !this.api.ready() ||
+      this.api.user()?.role === 'admin' ||
+      path === '/' ||
+      /^\/(login|register|forgot-password|reset-password)(\/|$)/.test(path)
+    );
+  });
   unread = signal(0);
   noticeCount = signal(0);
   currentLocation = signal('Metro Manila');
+  searchQuery = signal('');
   navigation = [
     { label: 'Home', path: '/tabs/home', icon: 'home-outline' },
     { label: 'Discover', path: '/tabs/discover', icon: 'compass-outline' },
@@ -124,9 +137,10 @@ export class AppComponent {
   constructor() {
     this.router.events.pipe(filter((e) => e instanceof NavigationEnd)).subscribe(() => {
       this.url.set(this.router.url);
-      const path = this.router.url.split(/[?#]/)[0];
-      this.standalonePage.set(
-        path === '/' || /^\/(login|register|forgot-password|reset-password)(\/|$)/.test(path),
+      this.searchQuery.set(
+        this.router.url.startsWith('/search')
+          ? this.router.parseUrl(this.router.url).queryParams['q'] || ''
+          : '',
       );
       document.querySelector('.app-body')?.scrollTo({ top: 0 });
       void this.badges();
@@ -134,7 +148,7 @@ export class AppComponent {
     void this.api.initialize().then(() => this.badges());
   }
   async badges() {
-    if (!this.api.user()) {
+    if (!this.api.user() || this.api.user()?.role === 'admin') {
       this.noticeCount.set(0);
       this.unread.set(0);
       return;
@@ -152,7 +166,10 @@ export class AppComponent {
     if (this.api.requireUser()) void this.router.navigate(['/create-event']);
   }
   search(q: string) {
-    void this.router.navigate(['/tabs/discover'], { queryParams: { q } });
+    void this.router.navigate(['/search'], { queryParams: { q: q.trim() || null } });
+  }
+  clearGlobalSearch(q: string) {
+    if (!q && this.router.url.startsWith('/search')) this.search('');
   }
   async location() {
     const loc = await this.ui.prompt(

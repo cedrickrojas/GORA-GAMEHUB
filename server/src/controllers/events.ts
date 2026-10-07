@@ -5,6 +5,7 @@ import { requireAuth } from '../middleware/auth.js';
 import { eventSelect, visibility } from '../models/queries.js';
 import { wrap, text, uuid, id, url, HttpError, page } from '../utils/http.js';
 import { notify } from '../services/notifications.js';
+import { searchPattern } from '../utils/search.js';
 export const events = Router();
 const fields = z
   .object({
@@ -52,10 +53,10 @@ events.get(
       const q = text(120)
         .parse(req.query.q)
         .replace(/\s+near\s+/i, ' ');
-      for (const token of q.split(/\s+/).filter(Boolean).slice(0, 6))
+      for (const token of q.split(/\s+/).filter(Boolean))
         add(
           "(e.title || ' ' || e.location || ' ' || s.name || ' ' || e.venue) ILIKE ?",
-          `%${token}%`,
+          searchPattern(token),
         );
     }
     if (req.query.sport) add('s.name=?', text(40).parse(req.query.sport));

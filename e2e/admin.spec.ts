@@ -4,9 +4,7 @@ test('administrator can manage sports, review reports and save community setting
 }) => {
   const errors: string[] = [];
   page.on('pageerror', (e) => errors.push(e.message));
-  await page.goto('/login');
-  await page.getByRole('button', { name: 'Explore demo' }).click();
-  await expect(page).toHaveURL(/tabs\/home/);
+  expect((await page.request.post('/api/auth/demo')).ok()).toBe(true);
   const me = await (await page.request.get('/api/auth/me')).json();
   test.skip(
     me.role !== 'admin',
@@ -15,6 +13,9 @@ test('administrator can manage sports, review reports and save community setting
   await page.goto('/admin');
   await expect(page.getByRole('heading', { name: 'Keep the game fair.' })).toBeVisible();
   await expect(page.getByText('Total users', { exact: true })).toBeVisible();
+  await expect(page.locator('.sidebar, .topbar, g-bottom-navigation, g-create-button')).toHaveCount(
+    0,
+  );
   await page.getByRole('button', { name: 'Users', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Community roster' })).toBeVisible();
   await expect(page.getByRole('columnheader', { name: 'Moderation' })).toBeVisible();

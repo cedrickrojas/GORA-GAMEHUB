@@ -5,6 +5,18 @@ import { requireAuth } from '../middleware/auth.js';
 import { profileSelect, eventSelect, visibility } from '../models/queries.js';
 import { wrap, text, uuid, id, url, page, HttpError } from '../utils/http.js';
 import { notify, reminders } from '../services/notifications.js';
+import { searchPattern } from '../utils/search.js';
+import {
+  ownProfile,
+  profileUploadLimit,
+  profilePhotoUpload,
+} from '../middleware/profile-upload.js';
+import {
+  prepareAvatar,
+  storeAvatar,
+  removeAvatar,
+  validateExistingAvatar,
+} from '../services/avatars.js';
 export const social = Router();
 social.get(
   '/sports',
@@ -36,11 +48,16 @@ social.get(
       v.push(value);
       where += ' AND ' + sql.replace('?', `$${v.length}`);
     };
-    if (req.query.q)
-      add(
-        "(u.full_name || ' ' || u.username || ' ' || p.location) ILIKE ?",
-        '%' + text(120).parse(req.query.q) + '%',
-      );
+    if (req.query.q) {
+      const query = text(120).parse(req.query.q).replace(/^@/, '');
+      if (!query.trim()) throw new HttpError(400, 'Enter a name or username.');
+      for (const token of query.split(/\s+/).filter(Boolean)) {
+        add(
+          "(u.full_name || ' ' || u.username || ' ' || p.location || ' ' || p.favorite_team || ' ' || COALESCE((SELECT string_agg(s.name,' ') FROM user_sports us JOIN sports s ON s.id=us.sport_id WHERE us.user_id=u.id),'')) ILIKE ?",
+          searchPattern(token),
+        );
+      }
+    }
     if (req.query.sport)
       add(
         'EXISTS(SELECT 1 FROM user_sports us JOIN sports s ON s.id=us.sport_id WHERE us.user_id=u.id AND s.name=?)',
@@ -152,48 +169,95 @@ social.get(
 social.put(
   '/users/:id',
   requireAuth,
+  ownProfile,
+  profileUploadLimit,
+  profilePhotoUpload,
   wrap(async (req, res) => {
     const user = id(req);
-    if (user !== req.user!.id) throw new HttpError(403, 'You can edit only your own profile.');
+    let body = req.body;
+    if (req.is('multipart/form-data')) {
+      try {
+        body = JSON.parse(
+          z
+            .string()
+            .max(64 * 1024)
+            .parse(req.body.profile),
+        );
+      } catch {
+        throw new HttpError(400, 'Please include valid profile details with your photo.');
+      }
+    }
     const v = z
       .object({
         full_name: text(80),
         bio: z.string().trim().max(500),
-        location: text(120),
-        avatar_url: url.or(z.literal('')).nullable().optional(),
+        location: z
+          .string()
+          .trim()
+          .min(req.user!.role === 'admin' ? 0 : 1)
+          .max(120),
+        avatar_url: url
+          .or(z.string().regex(/^\/api\/uploads\/avatars\/[a-f0-9-]+\/[a-f0-9-]+\.webp$/i))
+          .or(z.literal(''))
+          .nullable()
+          .optional(),
         favorite_team: z.string().trim().max(80),
-        favorite_sports: z.array(text(40)).min(1).max(13),
+        favorite_sports: z
+          .array(text(40))
+          .min(req.user!.role === 'admin' ? 0 : 1)
+          .max(13),
         latitude: z.number().min(-90).max(90).nullable().optional(),
         longitude: z.number().min(-180).max(180).nullable().optional(),
         available_seats: z.number().int().min(0).max(100),
         group_size: z.number().int().min(1).max(100),
       })
-      .parse(req.body);
-    await transaction(async (tx) => {
-      await tx.query('UPDATE users SET full_name=$1 WHERE id=$2', [v.full_name, user]);
-      await tx.query(
-        'UPDATE profiles SET bio=$1,location=$2,avatar_url=$3,favorite_team=$4,latitude=$5,longitude=$6,available_seats=$7,group_size=$8 WHERE user_id=$9',
-        [
-          v.bio,
-          v.location,
-          v.avatar_url || null,
-          v.favorite_team,
-          v.latitude ?? null,
-          v.longitude ?? null,
-          v.available_seats,
-          v.group_size,
-          user,
-        ],
-      );
-      const sports = (
-        await tx.query('SELECT id FROM sports WHERE name=ANY($1::text[])', [v.favorite_sports])
-      ).rows;
-      if (sports.length !== new Set(v.favorite_sports).size)
-        throw new HttpError(400, 'Select valid sports.');
-      await tx.query('DELETE FROM user_sports WHERE user_id=$1', [user]);
-      for (const s of sports)
-        await tx.query('INSERT INTO user_sports(user_id,sport_id) VALUES($1,$2)', [user, s.id]);
-    });
+      .parse(body);
+    const photo = req.file ? await prepareAvatar(user, req.file.buffer) : null;
+    let previousAvatar: string | null = null;
+    let nextAvatar: string | null = null;
+    try {
+      await transaction(async (tx) => {
+        const current = (
+          await tx.query('SELECT avatar_url FROM profiles WHERE user_id=$1 FOR UPDATE', [user])
+        ).rows[0];
+        if (!current) throw new HttpError(404, 'Profile not found.');
+        previousAvatar = current.avatar_url;
+        nextAvatar = photo
+          ? photo.url
+          : v.avatar_url === undefined
+            ? previousAvatar
+            : v.avatar_url || null;
+        if (!photo) await validateExistingAvatar(nextAvatar, user);
+        const sports = (
+          await tx.query('SELECT id FROM sports WHERE name=ANY($1::text[])', [v.favorite_sports])
+        ).rows;
+        if (sports.length !== new Set(v.favorite_sports).size)
+          throw new HttpError(400, 'Select valid sports.');
+        if (photo) await storeAvatar(photo);
+        await tx.query('UPDATE users SET full_name=$1 WHERE id=$2', [v.full_name, user]);
+        await tx.query(
+          'UPDATE profiles SET bio=$1,location=$2,avatar_url=$3,favorite_team=$4,latitude=$5,longitude=$6,available_seats=$7,group_size=$8 WHERE user_id=$9',
+          [
+            v.bio,
+            v.location,
+            nextAvatar,
+            v.favorite_team,
+            v.latitude ?? null,
+            v.longitude ?? null,
+            v.available_seats,
+            v.group_size,
+            user,
+          ],
+        );
+        await tx.query('DELETE FROM user_sports WHERE user_id=$1', [user]);
+        for (const s of sports)
+          await tx.query('INSERT INTO user_sports(user_id,sport_id) VALUES($1,$2)', [user, s.id]);
+      });
+    } catch (error) {
+      if (photo) await removeAvatar(photo.url, user);
+      throw error;
+    }
+    if (previousAvatar !== nextAvatar) await removeAvatar(previousAvatar, user);
     res.json((await db.query(profileSelect + ' WHERE u.id=$1', [user])).rows[0]);
   }),
 );
@@ -204,11 +268,16 @@ social.delete(
     if (id(req) !== req.user!.id) throw new HttpError(403, 'You can delete only your own account.');
     const { password } = z.object({ password: z.string().min(1).max(72) }).parse(req.body);
     const bcrypt = await import('bcrypt');
-    const u = (await db.query('SELECT password_hash FROM users WHERE id=$1', [req.user!.id]))
-      .rows[0];
+    const u = (
+      await db.query(
+        'SELECT u.password_hash,p.avatar_url FROM users u JOIN profiles p ON p.user_id=u.id WHERE u.id=$1',
+        [req.user!.id],
+      )
+    ).rows[0];
     if (!(await bcrypt.compare(password, u.password_hash)))
       throw new HttpError(403, 'Password is incorrect.');
     await db.query('DELETE FROM users WHERE id=$1', [req.user!.id]);
+    await removeAvatar(u.avatar_url, req.user!.id);
     res.clearCookie('gora_session', { path: '/' });
     res.json({ success: true });
   }),

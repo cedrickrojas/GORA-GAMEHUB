@@ -144,10 +144,59 @@ import { IconComponent } from '../../shared/icon.component';
         </div>
       </div>
     }
-    <g-dialog [open]="editOpen()" title="Make it yours" (closed)="editOpen.set(false)">
+    <g-dialog [open]="editOpen()" title="Make it yours" (closed)="closeEdit()">
       @if (editModel; as m) {
         <form #form="ngForm" (ngSubmit)="form.valid && save()">
           <div class="form-grid">
+            <div class="span-2 profile-photo-editor">
+              <label for="profile-photo">Profile photo</label>
+              <div class="photo-editor-row">
+                <g-avatar [src]="photoPreview() || m.avatar_url" [name]="m.full_name" [size]="72" />
+                <div class="photo-editor-controls">
+                  <input
+                    #photoInput
+                    id="profile-photo"
+                    class="sr-only"
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp"
+                    [disabled]="busy()"
+                    (change)="selectPhoto($event)"
+                    aria-describedby="photo-help"
+                  />
+                  <div class="photo-editor-actions">
+                    <button
+                      type="button"
+                      class="button secondary small"
+                      [disabled]="busy()"
+                      (click)="photoInput.click()"
+                    >
+                      <g-icon name="image-outline" />{{
+                        selectedPhoto ? 'Change photo' : 'Upload photo'
+                      }}
+                    </button>
+                    @if (selectedPhoto || m.avatar_url || photoError()) {
+                      <button
+                        type="button"
+                        class="text-button"
+                        [disabled]="busy()"
+                        (click)="removePhoto(); photoInput.value = ''"
+                      >
+                        Remove photo
+                      </button>
+                    }
+                  </div>
+                  <p id="photo-help" class="photo-help">
+                    JPG, PNG, or WebP. Max 5 MB. Saved with your profile.
+                  </p>
+                  @if (photoName()) {
+                    <p class="photo-filename">{{ photoName() }}</p>
+                  }
+                </div>
+              </div>
+              @if (photoError()) {
+                <p class="form-error" role="alert">{{ photoError() }}</p>
+              }
+            </div>
             <label class="span-2"
               >Full name<input
                 required
@@ -168,17 +217,9 @@ import { IconComponent } from '../../shared/icon.component';
                 [(ngModel)]="m.location"
                 maxlength="120" /></label
             ><label
-              >Favorite team<input
-                name="team"
-                [(ngModel)]="m.favorite_team"
-                maxlength="80" /></label
-            ><label class="span-2"
-              >Profile photo URL<input
-                type="url"
-                name="avatar"
-                [(ngModel)]="m.avatar_url"
-                placeholder="https://…" /></label
-            ><label
+              >Favorite team<input name="team" [(ngModel)]="m.favorite_team" maxlength="80"
+            /></label>
+            <label
               >Available seats<input
                 type="number"
                 required
@@ -231,9 +272,9 @@ import { IconComponent } from '../../shared/icon.component';
           }
           <button
             class="button primary full-width"
-            [disabled]="busy() || !form.valid || !m.favorite_sports.length"
+            [disabled]="busy() || !form.valid || !m.favorite_sports.length || !!photoError()"
           >
-            {{ busy() ? 'Saving…' : 'Save profile' }}
+            {{ busy() ? (selectedPhoto ? 'Uploading photo…' : 'Saving…') : 'Save profile' }}
           </button>
           <details class="delete-account">
             <summary>Account settings</summary>
@@ -291,6 +332,10 @@ export class ProfilePage implements OnDestroy {
   tabs = ['About', 'Upcoming', 'Past games'];
   editModel: Person | null = null;
   saveError = signal('');
+  photoPreview = signal<string | null>(null);
+  photoName = signal('');
+  photoError = signal('');
+  selectedPhoto: File | null = null;
   deletePassword = '';
   sub: Subscription;
   constructor() {
@@ -340,9 +385,46 @@ export class ProfilePage implements OnDestroy {
     void this.router.navigate(['/tabs/discover'], { queryParams: { sport: name } });
   }
   edit() {
+    this.resetPhoto();
     this.editModel = structuredClone(this.person());
     this.saveError.set('');
     this.editOpen.set(true);
+  }
+  closeEdit() {
+    this.editOpen.set(false);
+    if (!this.busy()) this.resetPhoto();
+  }
+  selectPhoto(event: Event) {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    if (!file) return;
+    this.photoError.set('');
+    if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
+      this.photoError.set('Choose a JPG, PNG, or WebP photo.');
+      input.value = '';
+      return;
+    }
+    if (!file.size || file.size > 5 * 1024 * 1024) {
+      this.photoError.set('Choose a photo up to 5 MB.');
+      input.value = '';
+      return;
+    }
+    this.resetPhoto();
+    this.selectedPhoto = file;
+    this.photoName.set(file.name);
+    this.photoPreview.set(URL.createObjectURL(file));
+  }
+  removePhoto() {
+    this.resetPhoto();
+    if (this.editModel) this.editModel.avatar_url = '';
+  }
+  private resetPhoto() {
+    const preview = this.photoPreview();
+    if (preview) URL.revokeObjectURL(preview);
+    this.photoPreview.set(null);
+    this.photoName.set('');
+    this.photoError.set('');
+    this.selectedPhoto = null;
   }
   toggleSport(s: string) {
     if (this.editModel)
@@ -354,10 +436,18 @@ export class ProfilePage implements OnDestroy {
     this.busy.set(true);
     this.saveError.set('');
     try {
-      const p = await this.api.put<Person>('/users/' + this.person()!.id, this.editModel);
+      let body: Person | FormData | null = this.editModel;
+      if (this.selectedPhoto) {
+        const upload = new FormData();
+        upload.append('profile', JSON.stringify(this.editModel));
+        upload.append('photo', this.selectedPhoto, this.selectedPhoto.name);
+        body = upload;
+      }
+      const p = await this.api.put<Person>('/users/' + this.person()!.id, body);
       this.person.set(p);
       this.api.user.set(p);
       this.editOpen.set(false);
+      this.resetPhoto();
       await this.ui.toast('Profile updated. Your game, your way.');
     } catch (e) {
       this.saveError.set((e as Error).message);
@@ -457,6 +547,7 @@ export class ProfilePage implements OnDestroy {
     this.busy.set(false);
   }
   ngOnDestroy() {
+    this.resetPhoto();
     this.sub.unsubscribe();
   }
 }

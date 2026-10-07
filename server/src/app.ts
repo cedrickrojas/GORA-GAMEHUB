@@ -9,6 +9,7 @@ import { api } from './routes/index.js';
 import { db } from './database/db.js';
 import { existsSync } from 'node:fs';
 import { resolve } from 'node:path';
+import { avatarDirectory } from './services/avatars.js';
 export const app = express();
 app.disable('x-powered-by');
 app.use(
@@ -18,7 +19,7 @@ app.use(
         defaultSrc: ["'self'"],
         scriptSrc: ["'self'"],
         styleSrc: ["'self'", "'unsafe-inline'"],
-        imgSrc: ["'self'", 'https:', 'data:'],
+        imgSrc: ["'self'", 'https:', 'data:', 'blob:'],
         fontSrc: ["'self'", 'data:'],
         connectSrc: ["'self'"],
         objectSrc: ["'none'"],
@@ -78,6 +79,15 @@ app.get('/api/settings', async (_req, res, next) => {
     next(e);
   }
 });
+app.use(
+  '/api/uploads/avatars',
+  express.static(avatarDirectory, {
+    index: false,
+    redirect: false,
+    dotfiles: 'deny',
+    setHeaders: (res) => res.setHeader('Cache-Control', 'public, max-age=31536000, immutable'),
+  }),
+);
 app.use('/api', optionalAuth, api);
 app.use('/api', (_req, res) => {
   res.status(404).json({ error: 'API route not found.' });

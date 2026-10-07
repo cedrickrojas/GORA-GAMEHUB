@@ -41,7 +41,7 @@ import { DialogComponent } from '../../components/dialog.component';
     <div class="messaging-layout panel" [class.chat-open]="!!selected()">
       <aside class="conversation-list">
         <div class="conversation-search">
-          <g-search placeholder="Search conversations" (change)="q = $event" />
+          <g-search placeholder="Search conversations" (queryChange)="q = $event" />
         </div>
         @for (c of filtered(); track c.id) {
           <button
@@ -130,7 +130,7 @@ import { DialogComponent } from '../../components/dialog.component';
       </section>
     </div>
     <g-dialog [open]="newOpen()" title="Start a conversation" (closed)="newOpen.set(false)"
-      ><g-search placeholder="Find a person" (change)="searchPeople($event)" />
+      ><g-search placeholder="Find a person" (queryChange)="searchPeople($event)" />
       <div class="invite-list">
         @for (p of people(); track p.id) {
           <button (click)="start(p)">

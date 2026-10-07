@@ -593,6 +593,58 @@ g-category {
 .search-box input::placeholder {
   color: #82838b;
 }
+.search-box .search-submit {
+  flex-shrink: 0;
+  color: var(--muted);
+  width: 44px;
+  height: 44px;
+}
+.search-submit svg {
+  width: 20px;
+  height: 20px;
+}
+.search-results-input {
+  max-width: 760px;
+  margin-bottom: 24px;
+}
+.search-result-tabs {
+  margin-bottom: 24px;
+}
+.search-result-summary {
+  color: var(--muted);
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+.search-result-section {
+  margin-top: 32px;
+}
+.search-browse-actions,
+.person-social-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.search-browse-actions {
+  justify-content: center;
+}
+.person-social-actions {
+  margin: 16px 0 4px;
+}
+.person-social-actions .button {
+  flex: 1;
+}
+@media (max-width: 600px) {
+  .search-result-section .people-discover-grid {
+    grid-template-columns: 1fr;
+  }
+  .search-result-section .people-discover-grid .user-card {
+    padding: 20px;
+  }
+  .search-result-section .people-discover-grid .user-top {
+    flex-direction: row;
+    align-items: center;
+  }
+}
 .topbar-actions {
   display: flex;
   align-items: center;
@@ -2431,26 +2483,52 @@ input.ng-invalid.ng-touched {
   color: var(--orange);
   font-weight: 600;
 }
-.auth-divider {
-  border-top: 1px solid var(--line);
-  text-align: center;
-  margin: 30px 0 25px;
-  height: 1px;
+.profile-photo-editor > label {
+  margin-bottom: 12px;
 }
-.auth-divider > span {
-  position: relative;
-  top: -7px;
-  background: #17181b;
-  padding: 0 15px;
-  font-size: 8px;
-  letter-spacing: 1.2px;
-  color: #787e8e;
+.photo-editor-row {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding: 16px;
+  background: #191a1e;
+  border: 1px solid var(--line);
+  border-radius: 7px;
 }
-.demo-note {
+.photo-editor-controls {
+  min-width: 0;
+  flex: 1;
+}
+.photo-editor-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+}
+.photo-editor-actions .text-button {
+  min-height: 44px;
+  font-size: 11px;
+}
+.photo-help,
+.photo-filename {
+  margin: 9px 0 0;
   font-size: 10px;
-  color: #72798a;
-  text-align: center;
-  margin-top: 12px;
+  line-height: 1.6;
+  color: #a0a2ac;
+}
+.photo-filename {
+  color: #d4d5db;
+  overflow-wrap: anywhere;
+}
+@media (max-width: 420px) {
+  .photo-editor-row {
+    gap: 12px;
+    padding: 12px;
+  }
+  .photo-editor-row g-avatar {
+    width: 56px !important;
+    height: 56px !important;
+  }
 }
 .auth-bottom-note {
   font-size: 9px;
@@ -3061,6 +3139,50 @@ input.ng-invalid.ng-touched {
 }
 .community-banner h1 {
   font-size: 40px;
+}
+.admin-workspace {
+  max-width: 1440px;
+  margin: 0 auto;
+  padding: 28px clamp(16px, 4vw, 48px) 48px;
+}
+.admin-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding-bottom: 24px;
+  margin-bottom: 32px;
+  border-bottom: 1px solid var(--line);
+}
+.admin-account {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+.admin-account-name {
+  color: var(--muted);
+  font-size: 13px;
+}
+.admin-profile-fields {
+  border: 0;
+  padding: 0;
+  margin: 0;
+  min-width: 0;
+}
+.admin-profile-fields .profile-photo-editor {
+  margin-bottom: 22px;
+}
+@media (max-width: 600px) {
+  .admin-header {
+    flex-wrap: wrap;
+  }
+  .admin-account {
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  .admin-account-name {
+    display: none;
+  }
 }
 .admin-stat-grid {
   display: grid;

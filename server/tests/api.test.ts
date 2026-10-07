@@ -2,6 +2,12 @@ import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { randomBytes } from 'node:crypto';
 import request from 'supertest';
+import sharp from 'sharp';
+import { rm } from 'node:fs/promises';
+import { resolve, sep } from 'node:path';
+process.env.DATABASE_URL = '';
+const uploadRoot = resolve('.data', 'test-uploads-' + randomBytes(8).toString('hex'));
+process.env.UPLOAD_DIR = uploadRoot;
 process.env.EMBEDDED_DB_PATH = 'memory://';
 process.env.NODE_ENV = 'test';
 process.env.JWT_SECRET = randomBytes(48).toString('hex');
@@ -60,7 +66,11 @@ before(async () => {
   adminId = a.body.id;
   await db.query("UPDATE users SET role='admin' WHERE id=$1", [adminId]);
 });
-after(async () => await closeDb());
+after(async () => {
+  await closeDb();
+  assert.ok(uploadRoot.startsWith(resolve('.data') + sep));
+  await rm(uploadRoot, { recursive: true, force: true });
+});
 test('registration validates age, password, sport and uniqueness; passwords are hashed', async () => {
   const weak = await request(app)
     .post('/api/auth/register')
@@ -264,6 +274,232 @@ test('only owners can edit profiles; people matching and distance filters use pe
   assert.ok(list.body.every((p: any) => p.favorite_sports.includes('Basketball')));
   assert.equal((await player.get('/api/people?distance=10')).status, 400);
 });
+test('people and game search matches usernames and multiple terms, treats wildcards literally, and keeps private games hidden', async () => {
+  const people = await player.get('/api/people').query({ q: '@HOST' });
+  assert.equal(people.status, 200);
+  assert.deepEqual(
+    people.body.map((p: any) => p.id),
+    [hostId],
+  );
+  assert.deepEqual(
+    (await player.get('/api/people').query({ q: 'Basketball Host Makati' })).body.map(
+      (p: any) => p.id,
+    ),
+    [hostId],
+  );
+  assert.deepEqual((await player.get('/api/people').query({ q: '%' })).body, []);
+  assert.deepEqual((await player.get('/api/people').query({ q: '_' })).body, []);
+  assert.deepEqual((await player.get('/api/people').query({ q: "' OR 1=1 --" })).body, []);
+  assert.equal((await player.get('/api/people').query({ q: '@' })).status, 400);
+  await player.post('/api/people/' + hostId + '/follow');
+  assert.equal((await player.get('/api/people').query({ q: '@host' })).body[0].is_following, true);
+  await player.delete('/api/people/' + hostId + '/follow');
+
+  const publicGame = (
+    await host.post('/api/events').send(game({ title: 'SearchLiteral_100% Watch' }))
+  ).body;
+  const privateGame = (
+    await host
+      .post('/api/events')
+      .send(game({ title: 'SearchLiteral Private', privacy: 'Private' }))
+  ).body;
+  const cancelled = (
+    await host.post('/api/events').send(game({ title: 'SearchLiteral Cancelled' }))
+  ).body;
+  await host.delete('/api/events/' + cancelled.id);
+  const found = await player.get('/api/events').query({ q: 'SearchLiteral' });
+  assert.equal(found.status, 200);
+  assert.deepEqual(
+    found.body.map((e: any) => e.id),
+    [publicGame.id],
+  );
+  assert.ok(
+    (await host.get('/api/events').query({ q: 'SearchLiteral' })).body.some(
+      (e: any) => e.id === privateGame.id,
+    ),
+  );
+  assert.deepEqual(
+    (await request(app).get('/api/events').query({ q: 'SearchLiteral' })).body.map(
+      (e: any) => e.id,
+    ),
+    [publicGame.id],
+  );
+  assert.deepEqual(
+    (await player.get('/api/events').query({ q: '%' })).body.map((e: any) => e.id),
+    [publicGame.id],
+  );
+  assert.deepEqual(
+    (await player.get('/api/events').query({ q: '_' })).body.map((e: any) => e.id),
+    [publicGame.id],
+  );
+  const near = await player.get('/api/events').query({ q: 'SearchLiteral Basketball near Manila' });
+  assert.deepEqual(
+    near.body.map((e: any) => e.id),
+    [publicGame.id],
+  );
+  assert.deepEqual((await player.get('/api/events').query({ q: "' OR 1=1 --" })).body, []);
+});
+
+test('profile photos validate real image bytes, persist atomically, enforce ownership and replace safely', async () => {
+  const before = (await host.get('/api/users/' + hostId)).body;
+  const photo = await sharp({
+    create: { width: 24, height: 16, channels: 3, background: '#ff642f' },
+  })
+    .png()
+    .toBuffer();
+  const endpoint = '/api/users/' + hostId;
+  assert.equal(
+    (
+      await request(app)
+        .put(endpoint)
+        .field('profile', JSON.stringify(before))
+        .attach('photo', photo, 'photo.png')
+    ).status,
+    401,
+  );
+  assert.equal(
+    (
+      await player
+        .put(endpoint)
+        .field('profile', JSON.stringify(before))
+        .attach('photo', photo, 'photo.png')
+    ).status,
+    403,
+  );
+  assert.equal(
+    (
+      await host
+        .put(endpoint)
+        .field('profile', JSON.stringify(before))
+        .attach('photo', Buffer.from('<svg onload="alert(1)"></svg>'), {
+          filename: 'fake.png',
+          contentType: 'image/png',
+        })
+    ).status,
+    400,
+  );
+  assert.equal(
+    (await host.put(endpoint).field('profile', 'not-json').attach('photo', photo, 'photo.png'))
+      .status,
+    400,
+  );
+  assert.equal(
+    (
+      await host
+        .put(endpoint)
+        .field('profile', JSON.stringify({ ...before, favorite_sports: ['Unknown'] }))
+        .attach('photo', photo, 'photo.png')
+    ).status,
+    400,
+  );
+  assert.equal((await host.get(endpoint)).body.avatar_url, before.avatar_url);
+  assert.equal(
+    (
+      await host
+        .put(endpoint)
+        .field('profile', JSON.stringify(before))
+        .attach('photo', Buffer.alloc(5 * 1024 * 1024 + 1), {
+          filename: 'huge.png',
+          contentType: 'image/png',
+        })
+    ).status,
+    413,
+  );
+  const uploaded = await host
+    .put(endpoint)
+    .field('profile', JSON.stringify({ ...before, bio: 'A new photo, same crew.' }))
+    .attach('photo', photo, 'photo.png');
+  assert.equal(uploaded.status, 200, JSON.stringify(uploaded.body));
+  const avatar = uploaded.body.avatar_url;
+  assert.ok(avatar.startsWith('/api/uploads/avatars/' + hostId + '/'));
+  const download = await request(app).get(avatar);
+  assert.equal(download.status, 200);
+  assert.match(download.headers['content-type'], /image\/webp/);
+  assert.match(download.headers['x-content-type-options'], /nosniff/);
+  const metadata = await sharp(download.body).metadata();
+  assert.equal(metadata.width, 512);
+  assert.equal(metadata.height, 512);
+  assert.equal(metadata.format, 'webp');
+  assert.equal(metadata.exif, undefined);
+  assert.equal((await host.get('/api/auth/me')).body.avatar_url, avatar);
+  const foreign = (await player.get('/api/users/' + playerId)).body;
+  assert.equal(
+    (await player.put('/api/users/' + playerId).send({ ...foreign, avatar_url: avatar })).status,
+    400,
+  );
+  const { avatar_url: _url, ...detailsOnly } = uploaded.body;
+  assert.equal(
+    (await host.put(endpoint).send({ ...detailsOnly, bio: 'Photo stays when editing text.' })).body
+      .avatar_url,
+    avatar,
+  );
+  const replaced = await host
+    .put(endpoint)
+    .field('profile', JSON.stringify(uploaded.body))
+    .attach('photo', photo, 'replacement.png');
+  assert.equal(replaced.status, 200, JSON.stringify(replaced.body));
+  assert.notEqual(replaced.body.avatar_url, avatar);
+  assert.equal((await request(app).get(avatar)).status, 404);
+  const removed = await host.put(endpoint).send({ ...replaced.body, avatar_url: '' });
+  assert.equal(removed.status, 200);
+  assert.equal(removed.body.avatar_url, null);
+  assert.equal((await request(app).get(replaced.body.avatar_url)).status, 404);
+});
+
+test('admin profile saves without social preferences while ordinary users cannot bypass validation', async () => {
+  const before = (await admin.get('/api/auth/me')).body;
+  const endpoint = '/api/users/' + adminId;
+  const photo = await sharp({
+    create: { width: 64, height: 64, channels: 3, background: '#ff642f' },
+  })
+    .png()
+    .toBuffer();
+  const update = await admin
+    .put(endpoint)
+    .field(
+      'profile',
+      JSON.stringify({
+        ...before,
+        full_name: 'GORA Administrator',
+        bio: 'Community moderation',
+        location: '',
+        favorite_sports: [],
+        role: 'user',
+      }),
+    )
+    .attach('photo', photo, 'admin.png');
+  assert.equal(update.status, 200, JSON.stringify(update.body));
+  assert.equal(update.body.full_name, 'GORA Administrator');
+  assert.equal(update.body.bio, 'Community moderation');
+  assert.equal(update.body.location, '');
+  assert.deepEqual(update.body.favorite_sports, []);
+  assert.equal(update.body.role, 'admin');
+  assert.equal((await admin.get('/api/admin/dashboard')).status, 200);
+  assert.equal((await request(app).get(update.body.avatar_url)).status, 200);
+  const ordinary = (await host.get('/api/auth/me')).body;
+  assert.equal(
+    (
+      await host
+        .put('/api/users/' + hostId)
+        .send({ ...ordinary, favorite_sports: [], role: 'admin' })
+    ).status,
+    400,
+  );
+  assert.equal(
+    (await host.put('/api/users/' + hostId).send({ ...ordinary, location: '', role: 'admin' }))
+      .status,
+    400,
+  );
+  assert.equal((await host.put(endpoint).send(update.body)).status, 403);
+  assert.equal(
+    (await admin.put(endpoint).send({ ...update.body, favorite_sports: ['Unknown'] })).status,
+    400,
+  );
+  const restore = await admin.put(endpoint).send(before);
+  assert.equal(restore.status, 200);
+  assert.equal((await request(app).get(update.body.avatar_url)).status, 404);
+});
+
 test('cancellation notifies participants, prevents joins and closes event messaging', async () => {
   const e = (await host.post('/api/events').send(game())).body;
   await player.post('/api/events/' + e.id + '/join');

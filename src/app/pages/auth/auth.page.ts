@@ -152,13 +152,6 @@ import { IconComponent } from '../../shared/icon.component';
           <p class="auth-switch">
             New to the crew? <a routerLink="/register">Create an account</a>
           </p>
-          @if (api.demoAvailable()) {
-            <div class="auth-divider"><span>OR TAKE A LOOK AROUND</span></div>
-            <button class="button secondary full-width" [disabled]="busy()" (click)="demo()">
-              Explore demo<g-icon name="compass-outline" />
-            </button>
-            <p class="demo-note">A real account with sample games. Development only.</p>
-          }
         } @else if (mode === 'register') {
           <p class="auth-switch">Already part of the crew? <a routerLink="/login">Sign in</a></p>
         } @else {
@@ -229,21 +222,13 @@ export class AuthPage {
     return new URL(this.resetLink()).searchParams.get('token');
   }
   async finish() {
+    if (this.api.user()?.role === 'admin') {
+      await this.router.navigateByUrl('/admin');
+      return;
+    }
     let returnUrl = this.route.snapshot.queryParamMap.get('returnUrl') || '/tabs/home';
     if (!returnUrl.startsWith('/') || returnUrl.startsWith('//')) returnUrl = '/tabs/home';
     await this.router.navigateByUrl(returnUrl);
-  }
-  async demo() {
-    this.busy.set(true);
-    this.error.set('');
-    try {
-      await this.api.signIn('demo', {});
-      await this.finish();
-    } catch (e) {
-      this.error.set((e as Error).message);
-    } finally {
-      this.busy.set(false);
-    }
   }
   async submit() {
     this.busy.set(true);

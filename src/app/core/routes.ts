@@ -1,6 +1,11 @@
 import { Routes } from '@angular/router';
-import { authGuard, adminGuard } from '../guards/auth.guard';
-export const routes: Routes = [
+import { authGuard, adminGuard, adminNavigationGuard } from '../guards/auth.guard';
+const pages: Routes = [
+  {
+    path: 'search',
+    title: 'Search people and games | GORA',
+    loadComponent: () => import('../pages/search/search.page').then((m) => m.SearchPage),
+  },
   {
     path: '',
     pathMatch: 'full',
@@ -94,4 +99,7 @@ export const routes: Routes = [
     path: '**',
     loadComponent: () => import('../pages/not-found.page').then((m) => m.NotFoundPage),
   },
+];
+export const routes: Routes = [
+  { path: '', canActivateChild: [adminNavigationGuard], children: pages },
 ];

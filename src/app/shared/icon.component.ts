@@ -48,6 +48,7 @@ import {
   sunnyOutline,
   reloadOutline,
   baseballOutline,
+  imageOutline,
 } from 'ionicons/icons';
 addIcons({
   homeOutline,
@@ -95,6 +96,7 @@ addIcons({
   peopleCircleOutline,
   sunnyOutline,
   reloadOutline,
+  imageOutline,
 });
 addIcons({
   baseballOutline,

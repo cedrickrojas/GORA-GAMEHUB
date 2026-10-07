@@ -7,6 +7,7 @@ import { UiService } from '../../services/ui.service';
 import { IconComponent } from '../../shared/icon.component';
 import { AvatarComponent } from '../../components/avatar.component';
 import { DialogComponent } from '../../components/dialog.component';
+import { AdminProfileEditorComponent } from '../../components/admin-profile-editor.component';
 import { EmptyStateComponent, LoadingStateComponent } from '../../components/states.component';
 @Component({
   standalone: true,
@@ -17,10 +18,39 @@ import { EmptyStateComponent, LoadingStateComponent } from '../../components/sta
     IconComponent,
     AvatarComponent,
     DialogComponent,
+    AdminProfileEditorComponent,
     EmptyStateComponent,
     LoadingStateComponent,
   ],
-  template: `<div class="page-heading">
+  template: `<div class="admin-workspace">
+    <header class="admin-header">
+      <a routerLink="/admin" class="brand" aria-label="GORA admin dashboard"
+        >GORA<span class="brand-dot">.</span></a
+      >
+      <div class="admin-account">
+        <g-avatar
+          [src]="api.user()?.avatar_url"
+          [name]="api.user()?.full_name || 'Administrator'"
+          [size]="36"
+        />
+        <span class="admin-account-name">{{ api.user()?.full_name }}</span>
+        <button
+          class="button secondary small"
+          [disabled]="signingOut() || busy()"
+          (click)="profileOpen.set(true)"
+        >
+          <g-icon name="person-outline" />Edit profile
+        </button>
+        <button
+          class="button secondary small"
+          [disabled]="signingOut() || busy()"
+          (click)="signOut()"
+        >
+          <g-icon name="log-out-outline" />{{ signingOut() ? 'Signing out…' : 'Sign out' }}
+        </button>
+      </div>
+    </header>
+    <div class="page-heading">
       <div>
         <div class="eyebrow">GORA CONTROL ROOM</div>
         <h1>Keep the game fair<span class="orange-text">.</span></h1>
@@ -87,9 +117,9 @@ import { EmptyStateComponent, LoadingStateComponent } from '../../components/sta
                   <tr>
                     <td>
                       <div class="table-person">
-                        <g-avatar [src]="u.avatar_url" [name]="u.full_name" [size]="30" /><a
-                          [routerLink]="['/user', u.id]"
-                          >{{ u.full_name }}<small>&#64;{{ u.username }}</small></a
+                        <g-avatar [src]="u.avatar_url" [name]="u.full_name" [size]="30" />
+                        <span
+                          >{{ u.full_name }}<small>&#64;{{ u.username }}</small></span
                         >
                       </div>
                     </td>
@@ -146,7 +176,7 @@ import { EmptyStateComponent, LoadingStateComponent } from '../../components/sta
                 @for (e of rows(); track e.id) {
                   <tr>
                     <td>
-                      <a [routerLink]="['/event', e.id]">{{ e.title }}</a
+                      <strong>{{ e.title }}</strong
                       ><small>{{ e.sport }}</small>
                     </td>
                     <td>{{ e.host_name }}</td>
@@ -205,10 +235,10 @@ import { EmptyStateComponent, LoadingStateComponent } from '../../components/sta
               <small>{{ r.created_at | date: 'MMM d, yyyy · h:mm a' : '+0800' }}</small>
               <div class="report-target">
                 @if (r.event_id) {
-                  <a [routerLink]="['/event', r.event_id]" class="text-button">View event</a>
+                  <button (click)="change('Events')" class="text-button">Manage events</button>
                 }
                 @if (r.user_id) {
-                  <a [routerLink]="['/user', r.user_id]" class="text-button">View profile</a>
+                  <button (click)="change('Users')" class="text-button">Manage users</button>
                 }
                 @if (r.message_id) {
                   <span class="muted">Message ID: {{ r.message_id }}</span
@@ -292,6 +322,7 @@ import { EmptyStateComponent, LoadingStateComponent } from '../../components/sta
         </form>
       }
     }
+    <g-admin-profile-editor [open]="profileOpen()" (closed)="profileOpen.set(false)" />
     <g-dialog
       [open]="sportOpen()"
       [title]="sportModel.id ? 'Edit sport' : 'Add a sport'"
@@ -340,7 +371,8 @@ import { EmptyStateComponent, LoadingStateComponent } from '../../components/sta
           Save sport
         </button>
       </form></g-dialog
-    >`,
+    >
+  </div>`,
 })
 export class AdminPage {
   api = inject(ApiService);
@@ -352,6 +384,8 @@ export class AdminPage {
   loading = signal(true);
   error = signal('');
   busy = signal(false);
+  signingOut = signal(false);
+  profileOpen = signal(false);
   sportOpen = signal(false);
   sportModel = { id: '', name: '', slug: '', icon: 'fitness', description: '', image_url: '' };
   announcement = '';
@@ -366,6 +400,14 @@ export class AdminPage {
   ];
   constructor() {
     void this.load();
+  }
+  async signOut() {
+    this.signingOut.set(true);
+    try {
+      await this.ui.run(() => this.api.logout());
+    } finally {
+      this.signingOut.set(false);
+    }
   }
   change(t: string) {
     this.tab = t;

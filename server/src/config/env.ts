@@ -18,6 +18,7 @@ export const config = {
   port: Number(process.env.PORT || 3000),
   databaseUrl: process.env.DATABASE_URL,
   embeddedPath: process.env.EMBEDDED_DB_PATH || '.data/gora',
+  uploadsPath: resolve(process.env.UPLOAD_DIR || '.data/uploads'),
   origins: (
     process.env.CORS_ORIGIN ||
     'http://127.0.0.1:4200,http://localhost:4200,http://127.0.0.1:3000,http://localhost:3000'

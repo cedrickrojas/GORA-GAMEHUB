@@ -36,7 +36,7 @@ import { DialogComponent } from '../../components/dialog.component';
       <g-search
         placeholder="Search people or places"
         [value]="q"
-        (change)="search($event)"
+        (queryChange)="search($event)"
       /><button class="button secondary" (click)="filters = !filters">
         <g-icon name="options-outline" />Filters
       </button>
@@ -108,7 +108,7 @@ import { DialogComponent } from '../../components/dialog.component';
     } @else {
       <div class="people-grid people-discover-grid">
         @for (p of people(); track p.id) {
-          <g-user-card [person]="p" (invite)="invite($event)" />
+          <g-user-card [person]="p" [socialActions]="true" (invite)="invite($event)" />
         }
       </div>
     }

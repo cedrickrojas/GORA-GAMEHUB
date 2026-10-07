@@ -1,5 +1,6 @@
 import type { Request, Response, NextFunction, RequestHandler } from 'express';
 import { z } from 'zod';
+import { MulterError } from 'multer';
 export class HttpError extends Error {
   constructor(
     public status: number,
@@ -29,6 +30,13 @@ export const page = (req: Request) =>
     })
     .parse(req.query);
 export function errorHandler(err: any, _req: Request, res: Response, _next: NextFunction) {
+  if (err instanceof MulterError)
+    return res.status(err.code === 'LIMIT_FILE_SIZE' ? 413 : 400).json({
+      error:
+        err.code === 'LIMIT_FILE_SIZE'
+          ? 'Choose a photo up to 5 MB.'
+          : 'Upload one photo with your profile details.',
+    });
   if (err instanceof z.ZodError)
     return res.status(400).json({
       error: 'Please check your input.',

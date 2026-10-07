@@ -10,8 +10,8 @@ test('discovery, joining, schedule and direct chat work through the real API', a
   await page.screenshot({ path: `test-results/${info.project.name}-home.png`, fullPage: true });
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth > innerWidth);
   expect(overflow).toBe(false);
-  await page.goto('/login');
-  await page.getByRole('button', { name: 'Explore demo' }).click();
+  expect((await page.request.post('/api/auth/demo')).ok()).toBe(true);
+  await page.goto('/tabs/home');
   await expect(page.getByRole('heading', { name: 'What’s your game?' })).toBeVisible();
   await page.goto('/tabs/discover');
   await page
@@ -57,8 +57,8 @@ test('hosts can publish, edit, invite and cancel; profile preferences persist', 
 }, info) => {
   const errors: string[] = [];
   page.on('pageerror', (e) => errors.push(e.message));
-  await page.goto('/login');
-  await page.getByRole('button', { name: 'Explore demo' }).click();
+  expect((await page.request.post('/api/auth/demo')).ok()).toBe(true);
+  await page.goto('/tabs/home');
   await expect(page).toHaveURL(/tabs\/home/);
   await page.goto('/create-event');
   const title = `GORA verification ${info.project.name} ${Date.now()}`;

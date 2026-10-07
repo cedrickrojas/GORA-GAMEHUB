@@ -40,7 +40,7 @@ import { SportCardComponent } from '../../components/sport-card.component';
       <g-search
         placeholder="Try ‘Basketball near Manila’"
         [value]="q"
-        (change)="search($event)"
+        (queryChange)="search($event)"
       /><button class="button secondary" [class.active]="filters" (click)="filters = !filters">
         <g-icon name="options-outline" />Filters
       </button>

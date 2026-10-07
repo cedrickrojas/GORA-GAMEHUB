@@ -1,5 +1,5 @@
 import { PhotoPipe } from '../shared/photo.pipe';
-import { Component, Input } from '@angular/core';
+import { Component, Input, OnChanges, SimpleChanges } from '@angular/core';
 @Component({
   selector: 'g-avatar',
   standalone: true,
@@ -11,11 +11,14 @@ import { Component, Input } from '@angular/core';
     }`,
   host: { '[style.width.px]': 'size', '[style.height.px]': 'size' },
 })
-export class AvatarComponent {
+export class AvatarComponent implements OnChanges {
   @Input() src: string | null | undefined;
   @Input() name = 'Player';
   @Input() size = 38;
   failed = false;
+  ngOnChanges(changes: SimpleChanges) {
+    if (changes['src']) this.failed = false;
+  }
   get initials() {
     return this.name
       .split(' ')
