@@ -1,0 +1,650 @@
+:host {
+  display: block;
+}
+.landing {
+  background: #111214;
+  font-family: 'Inter', Arial, sans-serif;
+}
+.landing-container {
+  width: min(1200px, calc(100% - 96px));
+  margin-inline: auto;
+}
+.landing-skip {
+  position: fixed;
+  top: -100px;
+  left: 20px;
+  z-index: 100;
+  padding: 14px 20px;
+  background: var(--orange);
+  color: #fff;
+}
+.landing-skip:focus {
+  top: 12px;
+}
+.landing-header {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  background: #111214f5;
+  border-bottom: 1px solid #ffffff0d;
+}
+.header-inner {
+  height: 88px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 32px;
+}
+.section-nav,
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 32px;
+}
+.section-nav a,
+.sign-in {
+  font-size: 12px;
+  font-weight: 600;
+  color: #b6b6bb;
+  transition: color 0.2s;
+}
+.section-nav a:hover,
+.sign-in:hover {
+  color: #fff;
+}
+.header-actions {
+  gap: 24px;
+}
+.landing .button {
+  font-family: inherit;
+  border-radius: 4px;
+}
+.landing-hero {
+  position: relative;
+  isolation: isolate;
+  min-height: 660px;
+  overflow: hidden;
+}
+.hero-photo {
+  position: absolute;
+  z-index: -1;
+  inset: 0 0 0 38%;
+}
+.hero-photo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: 25% center;
+}
+.hero-photo::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(90deg, #111214 0%, #111214b8 15%, #1112140d 55%),
+    linear-gradient(0deg, #111214 0%, transparent 38%);
+}
+.hero-inner {
+  position: relative;
+  min-height: 580px;
+  display: flex;
+  align-items: center;
+}
+.landing-hero-copy {
+  width: 680px;
+  max-width: 72%;
+  padding-block: 74px 40px;
+}
+.landing-hero-copy .eyebrow {
+  font-size: 10px;
+  letter-spacing: 2px;
+  margin-bottom: 26px;
+}
+.landing h1,
+.landing h2 {
+  font-family: 'Barlow Condensed', Impact, sans-serif;
+  font-weight: 800;
+  font-style: italic;
+  letter-spacing: -0.5px;
+}
+.landing h1 {
+  font-size: clamp(64px, 6.8vw, 100px);
+  line-height: 0.97;
+  margin-bottom: 26px;
+}
+.landing h1 span {
+  color: var(--orange);
+}
+.landing-hero-copy > p {
+  max-width: 405px;
+  font-size: 14px;
+  line-height: 1.9;
+  color: #b6b6bd;
+}
+.hero-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 30px;
+}
+.hero-actions .button {
+  padding: 16px 23px;
+}
+.hero-note {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 10px;
+  color: #91939b;
+  margin-top: 24px;
+}
+.hero-note g-icon {
+  font-size: 15px;
+  color: var(--orange);
+}
+.photo-caption {
+  position: absolute;
+  right: 0;
+  bottom: 65px;
+  max-width: 215px;
+  border-left: 3px solid var(--orange);
+  padding: 4px 0 4px 16px;
+}
+.photo-caption span {
+  display: block;
+  font-size: 9px;
+  color: #b9b9bf;
+  letter-spacing: 1.4px;
+  margin-bottom: 9px;
+}
+.photo-caption strong {
+  display: block;
+  font-size: 13px;
+  line-height: 1.6;
+  letter-spacing: 0.7px;
+}
+.hero-bottom {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-block: 25px;
+  border-top: 1px solid #ffffff1c;
+}
+.hero-bottom > span {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 3px;
+  color: #92939a;
+}
+.hero-bottom a {
+  display: flex;
+  gap: 15px;
+  align-items: center;
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 1.5px;
+}
+.hero-bottom g-icon {
+  transform: rotate(90deg);
+  font-size: 16px;
+  color: var(--orange);
+}
+.sports-strip {
+  border-block: 1px solid #292a2e;
+  background: #191a1d;
+}
+.sports-inner {
+  display: flex;
+  align-items: center;
+  gap: 45px;
+  padding-block: 27px;
+}
+.sports-label {
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1.6;
+  letter-spacing: 1.4px;
+  color: #777980;
+  flex-shrink: 0;
+}
+.sport-links {
+  display: flex;
+  justify-content: space-between;
+  flex: 1;
+  gap: 20px;
+}
+.sport-links a {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 12px;
+  font-weight: 600;
+  transition: color 0.2s;
+}
+.sport-links a:hover {
+  color: var(--orange);
+}
+.sport-links g-icon {
+  font-size: 24px;
+  color: #9799a0;
+}
+.how-section {
+  padding-block: 100px;
+}
+.section-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 35px;
+  margin-bottom: 36px;
+}
+.landing h2 {
+  font-size: clamp(38px, 4vw, 56px);
+  line-height: 1.05;
+  margin-bottom: 0;
+}
+.section-heading > p {
+  margin-bottom: 4px;
+  font-size: 12px;
+  line-height: 1.9;
+}
+.steps-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 18px;
+}
+.step-card {
+  background: #1a1b1e;
+  border: 1px solid #2a2b30;
+  border-radius: 6px;
+  padding: 30px;
+}
+.step-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 33px;
+}
+.step-top g-icon {
+  color: var(--orange);
+  font-size: 28px;
+}
+.step-top span {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 38px;
+  font-style: italic;
+  color: #575960;
+}
+.step-card h3 {
+  font-size: 19px;
+  letter-spacing: -0.5px;
+}
+.step-card p {
+  font-size: 12px;
+  line-height: 1.85;
+  margin-bottom: 0;
+}
+#how-it-works,
+#find-a-game,
+#landing-content {
+  scroll-margin-top: 112px;
+}
+.games-section {
+  padding-block: 80px;
+  background: #17181b;
+  border-block: 1px solid #232429;
+}
+.text-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 13px;
+  color: var(--orange);
+  font-size: 12px;
+  font-weight: 600;
+  min-height: 44px;
+}
+.text-link:hover {
+  color: #ff976f;
+}
+.text-link g-icon {
+  font-size: 18px;
+}
+.landing-games {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 22px;
+}
+.games-note {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  font-size: 10px;
+  margin: 28px 0 0;
+  color: #91939b;
+}
+.games-note g-icon {
+  font-size: 14px;
+}
+.community-section {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 80px;
+  align-items: center;
+  padding-block: 100px;
+}
+.community-photo {
+  position: relative;
+  height: 400px;
+  overflow: hidden;
+  border-radius: 6px;
+}
+.community-photo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  filter: brightness(0.7);
+}
+.photo-stamp {
+  position: absolute;
+  bottom: 25px;
+  left: 25px;
+  font-size: 11px;
+  letter-spacing: 2px;
+  font-weight: 700;
+  border-left: 3px solid var(--orange);
+  padding-left: 12px;
+}
+.community-copy > p {
+  font-size: 13px;
+  line-height: 1.9;
+  margin: 24px 0;
+}
+.community-benefits {
+  padding: 0;
+  margin: 0 0 25px;
+  list-style: none;
+}
+.community-benefits li {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 11px;
+  color: #b6b7be;
+  margin-bottom: 17px;
+}
+.community-benefits g-icon {
+  color: var(--orange);
+  font-size: 19px;
+}
+.final-cta {
+  border-block: 1px solid #2b2c31;
+  background: #1b1c1f;
+}
+.cta-inner {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 35px;
+  padding-block: 65px;
+}
+.final-cta h2 {
+  font-size: clamp(66px, 8vw, 96px);
+}
+.final-cta h2 span {
+  color: var(--orange);
+}
+.final-cta p {
+  margin: 18px 0 0;
+  font-size: 12px;
+}
+.final-cta .button {
+  min-width: 200px;
+  padding: 18px 28px;
+}
+.landing-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 30px;
+  padding-block: 40px;
+}
+.landing-footer > div {
+  display: flex;
+  align-items: center;
+  gap: 25px;
+}
+.landing-footer .brand {
+  font-size: 29px;
+}
+.landing-footer > div > span {
+  color: #767880;
+  font-size: 8px;
+  font-weight: 600;
+  letter-spacing: 1.6px;
+}
+.landing-footer nav {
+  display: flex;
+  gap: 25px;
+  font-size: 11px;
+  color: #a1a2a9;
+}
+.landing-footer small {
+  color: #73757d;
+  font-size: 10px;
+}
+@media (max-width: 1100px) {
+  .landing-container {
+    width: calc(100% - 64px);
+  }
+  .section-nav {
+    gap: 20px;
+  }
+  .landing-hero-copy {
+    max-width: 76%;
+  }
+  .photo-caption {
+    max-width: 170px;
+  }
+  .sport-links {
+    flex-wrap: wrap;
+    justify-content: flex-start;
+    gap: 22px 30px;
+  }
+  .sports-inner {
+    gap: 30px;
+  }
+  .community-section {
+    gap: 40px;
+  }
+  .landing-footer > div > span {
+    display: none;
+  }
+}
+@media (max-width: 760px) {
+  .landing-container {
+    width: calc(100% - 40px);
+  }
+  .header-inner {
+    height: 74px;
+    gap: 14px;
+  }
+  .header-inner .brand {
+    font-size: 30px;
+  }
+  .section-nav {
+    display: none;
+  }
+  .header-actions {
+    gap: 15px;
+  }
+  .header-actions .button {
+    font-size: 11px;
+    padding: 10px 13px;
+  }
+  .header-actions .button g-icon {
+    display: none;
+  }
+  .sign-in {
+    font-size: 11px;
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+  }
+  .landing-hero {
+    min-height: 625px;
+  }
+  .hero-photo {
+    inset: 0;
+    opacity: 0.6;
+  }
+  .hero-photo img {
+    object-position: center;
+  }
+  .hero-photo::after {
+    background:
+      linear-gradient(90deg, #111214b8, #11121436), linear-gradient(0deg, #111214 4%, #11121440 70%);
+  }
+  .hero-inner {
+    min-height: 545px;
+    align-items: flex-end;
+  }
+  .landing-hero-copy {
+    max-width: 100%;
+    padding-block: 70px 35px;
+  }
+  .landing h1 {
+    font-size: clamp(53px, 11.6vw, 86px);
+  }
+  .landing-hero-copy .eyebrow {
+    font-size: 8px;
+    letter-spacing: 1.5px;
+  }
+  .landing-hero-copy > p {
+    max-width: 345px;
+    font-size: 13px;
+  }
+  .hero-actions {
+    gap: 10px;
+  }
+  .hero-actions .button {
+    font-size: 11px;
+    padding: 14px 17px;
+  }
+  .hero-actions g-icon {
+    font-size: 17px;
+  }
+  .photo-caption {
+    display: none;
+  }
+  .hero-bottom > span {
+    font-size: 8px;
+    letter-spacing: 1.5px;
+  }
+  .hero-bottom a {
+    font-size: 8px;
+    letter-spacing: 0.6px;
+    gap: 8px;
+  }
+  .sports-inner {
+    display: block;
+    padding-block: 24px;
+  }
+  .sports-label {
+    display: none;
+  }
+  .sport-links {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 22px 10px;
+  }
+  .sport-links a {
+    font-size: 10px;
+    gap: 6px;
+  }
+  .sport-links g-icon {
+    font-size: 20px;
+  }
+  .how-section,
+  .games-section {
+    padding-block: 58px;
+  }
+  .section-heading {
+    display: block;
+    margin-bottom: 25px;
+  }
+  .section-heading > p {
+    margin-top: 20px;
+  }
+  .section-heading > .text-link {
+    margin-top: 12px;
+  }
+  .landing h2 {
+    font-size: clamp(37px, 7.5vw, 52px);
+  }
+  .steps-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+  .step-card {
+    padding: 24px;
+  }
+  .step-top {
+    margin-bottom: 16px;
+  }
+  .landing-games {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+  .games-note {
+    line-height: 1.6;
+    text-align: center;
+  }
+  .community-section {
+    grid-template-columns: 1fr;
+    padding-block: 58px;
+    gap: 35px;
+  }
+  .community-photo {
+    height: 280px;
+  }
+  .community-benefits li {
+    font-size: 11px;
+    line-height: 1.6;
+  }
+  .cta-inner {
+    display: block;
+    padding-block: 45px;
+  }
+  .final-cta h2 {
+    font-size: 76px;
+  }
+  .final-cta .button {
+    margin-top: 28px;
+  }
+  .landing-footer {
+    flex-wrap: wrap;
+    padding-block: 32px;
+    gap: 24px;
+  }
+  .landing-footer nav {
+    gap: 15px;
+    font-size: 10px;
+  }
+  .landing-footer small {
+    width: 100%;
+  }
+  #how-it-works,
+  #find-a-game,
+  #landing-content {
+    scroll-margin-top: 92px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .landing *,
+  .landing *::before,
+  .landing *::after {
+    transition: none !important;
+    animation: none !important;
+    scroll-behavior: auto !important;
+  }
+}

@@ -1,0 +1,12 @@
+import { Router } from 'express';
+import { auth } from '../controllers/auth.js';
+import { events } from '../controllers/events.js';
+import { social } from '../controllers/social.js';
+import { messages } from '../controllers/messages.js';
+import { admin } from '../controllers/admin.js';
+export const api = Router();
+api.use('/auth', auth);
+api.use('/events', events);
+api.use('/conversations', messages);
+api.use('/admin', admin);
+api.use(social);

@@ -1,0 +1,12 @@
+node_modules/
+dist/
+server/dist/
+.angular/
+.env
+.env.*
+!.env.example
+.data/
+test-results/
+playwright-report/
+*.log
+.npm-cache/

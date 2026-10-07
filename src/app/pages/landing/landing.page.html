@@ -1,0 +1,208 @@
+<div class="landing">
+  <a class="landing-skip" href="#landing-content" (click)="scrollTo($event, 'landing-content')"
+    >Skip to content</a
+  >
+  <header class="landing-header">
+    <div class="landing-container header-inner">
+      <a routerLink="/" class="brand" aria-label="GORA landing page">
+        <span class="brand-mark" aria-hidden="true"><i></i><i></i><i></i></span>GORA<span
+          class="brand-dot"
+          >.</span
+        >
+      </a>
+      <nav class="section-nav" aria-label="Explore GORA">
+        <a href="#how-it-works" (click)="scrollTo($event, 'how-it-works')">How it works</a>
+        <a href="#find-a-game" (click)="scrollTo($event, 'find-a-game')">Find a game</a>
+        <a routerLink="/communities">Communities</a>
+      </nav>
+      <div class="header-actions">
+        @if (api.user()) {
+        <a routerLink="/tabs/home" class="button primary"
+          >Open GORA <g-icon name="arrow-forward-outline"
+        /></a>
+        } @else {
+        <a routerLink="/login" class="sign-in">Sign in</a>
+        <a routerLink="/register" class="button primary"
+          >Join GORA <g-icon name="arrow-forward-outline"
+        /></a>
+        }
+      </div>
+    </div>
+  </header>
+
+  <div id="landing-content" tabindex="-1">
+    <section class="landing-hero" aria-labelledby="landing-title">
+      <div class="hero-photo">
+        <img
+          src="/images/hero.jpg"
+          alt="A basketball rising toward the hoop"
+          fetchpriority="high"
+        />
+      </div>
+      <div class="landing-container hero-inner">
+        <div class="landing-hero-copy">
+          <div class="eyebrow">
+            <span class="orange-line"></span>LESS SCROLLING. MORE SHOWING UP.
+          </div>
+          <h1 id="landing-title">FIND YOUR GAME.<br />FIND YOUR <span>PEOPLE.</span></h1>
+          <p>
+            Your next pickup game. Your game-day crew. Your kind of people. Bring your love of
+            sport. We’ll help you find the rest.
+          </p>
+          <div class="hero-actions">
+            <a [routerLink]="api.user() ? '/tabs/home' : '/register'" class="button primary"
+              >{{ api.user() ? 'Open GORA' : 'Find my crew' }} <g-icon name="arrow-forward-outline"
+            /></a>
+            <a routerLink="/tabs/discover" class="button secondary"
+              >Explore games <g-icon name="compass-outline"
+            /></a>
+          </div>
+          <div class="hero-note">
+            <g-icon name="checkmark-circle-outline" /> On the court. In the stands. Together.
+          </div>
+        </div>
+        <div class="photo-caption" aria-hidden="true">
+          <span>THE GAME IS BETTER</span><strong>WHEN YOU SHOW UP TOGETHER.</strong>
+        </div>
+      </div>
+      <div class="hero-bottom landing-container">
+        <span>PLAY. WATCH. CONNECT.</span
+        ><a href="#how-it-works" (click)="scrollTo($event, 'how-it-works')"
+          >GET IN THE GAME <g-icon name="arrow-forward-outline"
+        /></a>
+      </div>
+    </section>
+
+    <section class="sports-strip" aria-label="Discover your sport">
+      <div class="landing-container sports-inner">
+        <span class="sports-label">YOUR SPORT.<br />YOUR CALL.</span>
+        <div class="sport-links">
+          @for (sport of sports; track sport.name) {
+          <a routerLink="/tabs/discover" [queryParams]="{ q: sport.name }"
+            ><g-icon [name]="sport.icon" />{{ sport.name }}</a
+          >
+          }
+        </div>
+      </div>
+    </section>
+
+    <section id="how-it-works" class="landing-container how-section" aria-labelledby="how-title">
+      <div class="section-heading">
+        <div>
+          <span class="eyebrow">THE GORA WAY</span>
+          <h2 id="how-title">GOOD GAMES START<br />WITH GREAT COMPANY.</h2>
+        </div>
+        <p>
+          You don’t need a whole team to get started.<br />Just a sport you love and the urge to get
+          out there.
+        </p>
+      </div>
+      <div class="steps-grid">
+        @for (step of steps; track step.number) {
+        <article class="step-card">
+          <div class="step-top"><g-icon [name]="step.icon" /><span>{{ step.number }}</span></div>
+          <h3>{{ step.title }}</h3>
+          <p>{{ step.description }}</p>
+        </article>
+        }
+      </div>
+    </section>
+
+    <section id="find-a-game" class="games-section" aria-labelledby="games-title">
+      <div class="landing-container">
+        <div class="section-heading">
+          <div>
+            <span class="eyebrow">MAKE YOUR NEXT MOVE</span>
+            <h2 id="games-title">THERE’S A GAME<br />WITH YOUR NAME ON IT.</h2>
+          </div>
+          <a routerLink="/tabs/discover" class="text-link"
+            >Browse all games <g-icon name="arrow-forward-outline"
+          /></a>
+        </div>
+        @if (loading()) {
+        <g-loading />
+        } @else if (error()) {
+        <g-empty
+          title="The lineup couldn’t load"
+          [description]="error()"
+          action="Try again"
+          (retry)="loadGames()"
+        />
+        } @else if (!games().length) {
+        <g-empty
+          title="Be the first to get a game going"
+          description="Your next crew starts with an invitation. Create a game and bring people together."
+        />
+        <a routerLink="/create-event" class="button primary"
+          >Create a game <g-icon name="add-outline"
+        /></a>
+        } @else {
+        <div class="landing-games">
+          @for (game of games(); track game.id) {
+          <g-event-card [game]="game" (join)="openGame($event)" /> }
+        </div>
+        }
+        <p class="games-note">
+          <g-icon name="location-outline" /> Real plans. Local places. People who love the game.
+        </p>
+      </div>
+    </section>
+
+    <section class="landing-container community-section" aria-labelledby="community-title">
+      <div class="community-photo">
+        <img
+          src="/images/photo-1546519638-68e109498ffc.jpg"
+          alt="Basketball players sharing the court"
+          loading="lazy"
+        /><span class="photo-stamp">MORE THAN A GAME.</span>
+      </div>
+      <div class="community-copy">
+        <span class="eyebrow">FIND WHERE YOU BELONG</span>
+        <h2 id="community-title">SAME PASSION.<br />NEW CONNECTIONS.</h2>
+        <p>
+          From the first whistle to the final buzzer, sport brings us together. Find fellow fans,
+          build your regular crew, and turn “we should play sometime” into a plan.
+        </p>
+        <ul class="community-benefits">
+          <li><g-icon name="people-outline" /> Meet players and fans who share your sports</li>
+          <li>
+            <g-icon name="chatbubble-ellipses-outline" /> Keep the whole crew in the conversation
+          </li>
+          <li><g-icon name="calendar-outline" /> Make room for more game days</li>
+        </ul>
+        <a routerLink="/people" class="text-link"
+          >Find your people <g-icon name="arrow-forward-outline"
+        /></a>
+      </div>
+    </section>
+
+    <section class="final-cta" aria-labelledby="cta-title">
+      <div class="landing-container cta-inner">
+        <div>
+          <span class="eyebrow">YOUR CREW IS OUT THERE.</span>
+          <h2 id="cta-title">LET’S <span>GORA.</span></h2>
+          <p>Find your game. Find your people. GORA!</p>
+        </div>
+        <a [routerLink]="api.user() ? '/tabs/home' : '/register'" class="button primary"
+          >{{ api.user() ? 'Back to my games' : 'Get in the game' }}
+          <g-icon name="arrow-forward-outline"
+        /></a>
+      </div>
+    </section>
+  </div>
+
+  <footer class="landing-footer landing-container">
+    <div>
+      <a routerLink="/" class="brand" aria-label="GORA landing page"
+        >GORA<span class="brand-dot">.</span></a
+      ><span>PLAY. CONNECT. REPEAT.</span>
+    </div>
+    <nav aria-label="Footer navigation">
+      <a routerLink="/tabs/discover">Discover</a><a routerLink="/communities">Communities</a
+      ><a [routerLink]="api.user() ? '/tabs/profile' : '/login'"
+        >{{ api.user() ? 'My profile' : 'Sign in' }}</a
+      >
+    </nav>
+    <small>© {{ year }} GORA</small>
+  </footer>
+</div>
